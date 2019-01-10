@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+// --------------- Tokenize
+
 // トークンの型を表す値
 enum {
   TK_NUM = 256, // 整数
@@ -53,56 +55,121 @@ void tokenize(char *p) {
   tokens[i].input = p;
 }
 
+// --------------- Syntax tree
+
+enum {
+  ND_NUM = 256 // 整数のノードの型
+};
+
+typedef struct {
+  int ty; // 演算子かND_NUM
+  struct Node *lhs; // 左辺
+  struct Node *rhs; // 右辺
+  int val; // tyがND_NUMの場合のみ使う
+} Node;
+
+// パースしているトークンの現在位置
+int pos = 0;
+
+Node *new_node(int ty, Node *lhs, Node *rhs) {
+  Node *node = malloc(sizeof(Node));
+  node->ty = ty;
+  node->lhs = lhs;
+  node->rhs = rhs;
+  return node;
+}
+
+Node *new_node_num(int val) {
+  Node *node = malloc(sizeof(Node));
+  node->ty = ND_NUM;
+  node->val = val;
+  return node;
+}
+
+Node *num() {
+  if (tokens[pos].ty == TK_NUM) {
+    return new_node_num(tokens[pos++].val);
+  }
+
+  error(pos);
+}
+
+Node *add() {
+  Node *node = num();
+
+  for (;;) {
+    if (consume('+')) {
+      node = new_node('+', node, num());
+    } else if (consume('-')) {
+      node = new_node('-', node, num());
+    } else {
+      return node;
+    }
+  }
+}
+
+// 次のトークンの型が期待した型であれば1つ読み進める
+int consume(int ty) {
+  if (tokens[pos].ty != ty) {
+    return 0;
+  }
+  pos++;
+  return 1;
+}
+
+// スタックマシンをエミュレートするような命令を生成する
+void gen(Node *node) {
+  if (node->ty == ND_NUM) {
+    printf("  push %d\n", node->val);
+    return;
+  }
+
+  gen(node->lhs);
+  gen(node->rhs);
+
+  printf("  pop rdi\n");
+  printf("  pop rax\n");
+
+  switch (node->ty) {
+    case '+':
+      printf("  add rax, rdi\n");
+      break;
+    case '-':
+      printf("  sub rax, rdi\n");
+      break;
+  }
+
+  printf("  push rax\n");
+}
+
+// --------------- Common
+
 void error(int i) {
   fprintf(stderr, "予期しないトークンです: %s\n", tokens[i].input);
   exit(1);
 }
 
+// --------------- Main
 int main(int argc, char **argv) {
   if (argc != 2) {
     fprintf(stderr, "引数の数が正しくありません\n");
     return 1;
   }
 
+  // トークナイズしてパース
   tokenize(argv[1]);
+  Node *node = add();
 
   // アセンブリの前半部分
   printf(".intel_syntax noprefix\n");
   printf(".global main\n");
   printf("main:\n");
 
-  // 始めは数値でなければならない
-  if (tokens[0].ty != TK_NUM) {
-      error(0);
-  }
-  printf("  mov rax, %d\n", tokens[0].val);
+  // 抽象構文木を下りながらコード生成
+  gen(node);
 
-  // それ以降
-  int i = 1;
-  while (tokens[i].ty != TK_EOF) {
-    if (tokens[i].ty == '+') {
-      i++;
-      if (tokens[i].ty != TK_NUM) {
-        error(i);
-      }
-      printf("  add rax, %d\n", tokens[i].val);
-      i++;
-      continue;
-    }
-
-    if (tokens[i].ty == '-') {
-      i++;
-      if (tokens[i].ty != TK_NUM) {
-        error(i);
-      }
-      printf("  sub rax, %d\n", tokens[i].val);
-      i++;
-      continue;
-    }
-
-    error(i);
-  }
-
+  // スタックトップにある式全体の値をロードして返り値にする
+  printf("  pop rax\n");
   printf("  ret\n");
   return 0;
 }
