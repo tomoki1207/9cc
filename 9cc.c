@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// --------------- Tokenize
-
 // トークンの型を表す値
 enum {
   TK_NUM = 256, // 整数
@@ -17,6 +15,31 @@ typedef struct {
   int val; // tyがTK_NUMの場合の数値
   char *input; // トークン文字列(エラーメッセージ用)
 } Token;
+
+// ノードの型を表す値
+enum {
+  ND_NUM = 256 // 整数のノードの型
+};
+
+// ノードの型
+typedef struct {
+  int ty; // 演算子かND_NUM
+  struct Node *lhs; // 左辺
+  struct Node *rhs; // 右辺
+  int val; // tyがND_NUMの場合のみ使う
+} Node;
+
+void tokenize(char *p);
+Node *new_node(int ty, Node *lhs, Node *rhs);
+Node *new_node_num(int val);
+Node *add();
+Node *mul();
+Node *term();
+int consume(int ty);
+void gen(Node *node);
+void error(char *format, int i);
+
+// --------------- Tokenize
 
 // トークナイズした結果の配列
 // 100個以上は来ないものとする
@@ -31,7 +54,8 @@ void tokenize(char *p) {
       continue;
     }
 
-    if (*p == '+' || *p == '-' || *p == '*' || *p == '/') {
+    if (*p == '+' || *p == '-' || *p == '*' || *p == '/'
+          || *p == '(' || *p == ')') {
       tokens[i].ty = *p;
       tokens[i].input = p;
       i++;
@@ -47,8 +71,7 @@ void tokenize(char *p) {
       continue;
     }
 
-    fprintf(stderr, "トークナイズできません: %s\n", p);
-    exit(1);
+    error("トークナイズできません: %s\n", p);
   }
 
   tokens[i].ty = TK_EOF;
@@ -56,17 +79,6 @@ void tokenize(char *p) {
 }
 
 // --------------- Syntax tree
-
-enum {
-  ND_NUM = 256 // 整数のノードの型
-};
-
-typedef struct {
-  int ty; // 演算子かND_NUM
-  struct Node *lhs; // 左辺
-  struct Node *rhs; // 右辺
-  int val; // tyがND_NUMの場合のみ使う
-} Node;
 
 // パースしているトークンの現在位置
 int pos = 0;
@@ -86,22 +98,30 @@ Node *new_node_num(int val) {
   return node;
 }
 
-Node *num() {
+Node *term() {
+  if (consume('(')) {
+    Node *node = add();
+    if (!consume(')')) {
+      error("'('に対応する')'がありません: %s", pos);
+    }
+    return node;
+  }
+
   if (tokens[pos].ty == TK_NUM) {
     return new_node_num(tokens[pos++].val);
   }
 
-  error(pos);
+  error("数値でも'('でもないトークンです: %s", pos);
 }
 
 Node *mul() {
-  Node *node = num();
+  Node *node = term();
 
   for (;;) {
     if (consume('*')) {
-      node = new_node('*', node, num());
+      node = new_node('*', node, term());
     } else if (consume('/')) {
-      node = new_node('/', node, num());
+      node = new_node('/', node, term());
     } else {
       return node;
     }
@@ -164,8 +184,8 @@ void gen(Node *node) {
 
 // --------------- Common
 
-void error(int i) {
-  fprintf(stderr, "予期しないトークンです: %s\n", tokens[i].input);
+void error(char *format, int i) {
+  fprintf(stderr, format, tokens[i].input);
   exit(1);
 }
 
