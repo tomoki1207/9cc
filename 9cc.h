@@ -1,3 +1,16 @@
+// 可変長ベクタ
+typedef struct {
+  void **data; // data本体
+  int capacity; // バッファの大きさ
+  int len; // 追加済みの要素数
+} Vector;
+
+// マップ(連想配列)
+typedef struct {
+  Vector *keys; // キー
+  Vector *vals; // 値
+} Map;
+
 // トークンの型を表す値
 enum {
   TK_NUM = 256, // 整数
@@ -35,4 +48,14 @@ extern int pos;
 Node *program();
 void gen(Node *node);
 __attribute__((noreturn)) void error(char *format, ...);
+
+Vector *new_vector();
+void vec_push(Vector *vec, void *elem);
+Map *new_map();
+void map_put(Map *map, char *key, void *val);
+void *map_get(Map *map, char *key);
+
+
+void runtest();
+
 
