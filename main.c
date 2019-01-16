@@ -18,63 +18,8 @@ __attribute__((noreturn)) void error(char *format, ...) {
 // トークナイズした結果
 Vector *tokens;
 
-// --------------- Tokenize
-
-Token *add_token(int ty, char *input) {
-  Token *token = malloc(sizeof(Token));
-  token->ty = ty;
-  token->input = input;
-  vec_push(tokens, (void *)token);
-  return token;
-}
-
-Token get_token(int i) {
-  return *((Token *)(tokens->data[i]));
-}
-
-// pをトークナイズしてtokensに保存する
-void tokenize(char *p) {
-  int i = 0;
-  while (*p) {
-    if (isspace(*p)) {
-      p++;
-      continue;
-    }
-
-    if (*p == '+' || *p == '-' || *p == '*' || *p == '/'
-          || *p == '(' || *p == ')' || *p == '=' || *p == ';') {
-      add_token(*p, p);
-      i++;
-      p++;
-      continue;
-    }
-
-    if ('a' <= *p && *p <= 'z') {
-      Token *token = add_token(TK_IDENT, p);
-      token->val = *p;
-      i++;
-      p++;
-      continue;
-    }
-
-    if (isdigit(*p)) {
-      Token *token = add_token(TK_NUM, p);
-      token->val = strtol(p, &p, 10);
-      i++;
-      continue;
-    }
-
-    error("トークナイズできません: %s\n", p);
-  }
-
-  add_token(TK_EOF, p);
-}
-
 // パース結果
 Vector *code;
-
-// パースしているトークンの現在位置
-int pos = 0;
 
 // --------------- Main
 int main(int argc, char **argv) {

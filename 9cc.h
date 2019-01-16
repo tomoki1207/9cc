@@ -43,9 +43,8 @@ typedef struct {
 
 extern Vector *tokens;
 extern Vector *code;
-extern int pos;
 
-Token get_token(int i);
+void tokenize(char *p);
 void program();
 void gen(Node *node);
 __attribute__((noreturn)) void error(char *format, ...);

@@ -3,6 +3,63 @@
 
 #include "9cc.h"
 
+// --------------- Tokenize
+
+Token *add_token(int ty, char *input) {
+  Token *token = malloc(sizeof(Token));
+  token->ty = ty;
+  token->input = input;
+  vec_push(tokens, (void *)token);
+  return token;
+}
+
+Token get_token(int i) {
+  return *((Token *)(tokens->data[i]));
+}
+
+// pをトークナイズしてtokensに保存する
+void tokenize(char *p) {
+  int i = 0;
+  while (*p) {
+    if (isspace(*p)) {
+      p++;
+      continue;
+    }
+
+    if (*p == '+' || *p == '-' || *p == '*' || *p == '/'
+          || *p == '(' || *p == ')' || *p == '=' || *p == ';') {
+      add_token(*p, p);
+      i++;
+      p++;
+      continue;
+    }
+
+    if ('a' <= *p && *p <= 'z') {
+      Token *token = add_token(TK_IDENT, p);
+      token->val = *p;
+      i++;
+      p++;
+      continue;
+    }
+
+    if (isdigit(*p)) {
+      Token *token = add_token(TK_NUM, p);
+      token->val = strtol(p, &p, 10);
+      i++;
+      continue;
+    }
+
+    error("トークナイズできません: %s\n", p);
+  }
+
+  add_token(TK_EOF, p);
+}
+
+// ---------- Parse
+
+// パースしているトークンの現在位置
+int pos = 0;
+
 Node *new_node(int ty, Node *lhs, Node *rhs) {
   Node *node = malloc(sizeof(Node));
   node->ty = ty;
