@@ -27,7 +27,7 @@ Node *new_node_ident(char name) {
 
 // 次のトークンの型が期待した型であれば1つ読み進める
 int consume(int ty) {
-  if (tokens[pos].ty != ty) {
+  if (get_token(pos).ty != ty) {
     return 0;
   }
   pos++;
@@ -40,20 +40,20 @@ Node *term() {
   if (consume('(')) {
     Node *node = add();
     if (!consume(')')) {
-      error("'('に対応する')'がありません: %s", tokens[pos].input);
+      error("'('に対応する')'がありません: %s", get_token(pos).input);
     }
     return node;
   }
 
-  if (tokens[pos].ty == TK_NUM) {
-    return new_node_num(tokens[pos++].val);
+  if (get_token(pos).ty == TK_NUM) {
+    return new_node_num(get_token(pos++).val);
   }
 
-  if (tokens[pos].ty == TK_IDENT) {
-    return new_node_ident(tokens[pos++].val);
+  if (get_token(pos).ty == TK_IDENT) {
+    return new_node_ident(get_token(pos++).val);
   }
 
-  error("無効なトークンです: %s", tokens[pos].input);
+  error("無効なトークンです: %s", get_token(pos).input);
 }
 
 Node *mul() {
@@ -99,16 +99,15 @@ Node *assign() {
 Node *stmt() {
   Node *node = assign();
   if (!consume(';')) {
-    error("';'ではないトークンです: %s", tokens[pos].input);
+    error("';'ではないトークンです: %s", get_token(pos).input);
   }
   return node;
 }
 
-Node *program() {
-  int i = 0;
-  while(tokens[pos].ty != TK_EOF) {
-    code[i++] = stmt();
+void program() {
+  while(get_token(pos).ty != TK_EOF) {
+    vec_push(code, (void *)stmt());
   }
-  code[i] = NULL;
+  vec_push(code, NULL);
 }
 

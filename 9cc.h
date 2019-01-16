@@ -41,11 +41,12 @@ typedef struct {
 } Node;
 
 
-extern Token tokens[100];
-extern Node *code[100];
+extern Vector *tokens;
+extern Vector *code;
 extern int pos;
 
-Node *program();
+Token get_token(int i);
+void program();
 void gen(Node *node);
 __attribute__((noreturn)) void error(char *format, ...);
 

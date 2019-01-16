@@ -15,11 +15,22 @@ __attribute__((noreturn)) void error(char *format, ...) {
   exit(1);
 }
 
-// トークナイズした結果の配列
-// 100個以上は来ないものとする
-Token tokens[100];
+// トークナイズした結果
+Vector *tokens;
 
 // --------------- Tokenize
+
+Token *add_token(int ty, char *input) {
+  Token *token = malloc(sizeof(Token));
+  token->ty = ty;
+  token->input = input;
+  vec_push(tokens, (void *)token);
+  return token;
+}
+
+Token get_token(int i) {
+  return *((Token *)(tokens->data[i]));
+}
 
 // pをトークナイズしてtokensに保存する
 void tokenize(char *p) {
@@ -32,26 +43,23 @@ void tokenize(char *p) {
 
     if (*p == '+' || *p == '-' || *p == '*' || *p == '/'
           || *p == '(' || *p == ')' || *p == '=' || *p == ';') {
-      tokens[i].ty = *p;
-      tokens[i].input = p;
+      add_token(*p, p);
       i++;
       p++;
       continue;
     }
 
     if ('a' <= *p && *p <= 'z') {
-      tokens[i].ty = TK_IDENT;
-      tokens[i].input = p;
-      tokens[i].val = *p;
+      Token *token = add_token(TK_IDENT, p);
+      token->val = *p;
       i++;
       p++;
       continue;
     }
 
     if (isdigit(*p)) {
-      tokens[i].ty = TK_NUM;
-      tokens[i].input = p;
-      tokens[i].val = strtol(p, &p, 10);
+      Token *token = add_token(TK_NUM, p);
+      token->val = strtol(p, &p, 10);
       i++;
       continue;
     }
@@ -59,12 +67,11 @@ void tokenize(char *p) {
     error("トークナイズできません: %s\n", p);
   }
 
-  tokens[i].ty = TK_EOF;
-  tokens[i].input = p;
+  add_token(TK_EOF, p);
 }
 
 // パース結果
-Node *code[100];
+Vector *code;
 
 // パースしているトークンの現在位置
 int pos = 0;
@@ -83,6 +90,8 @@ int main(int argc, char **argv) {
 
   // トークナイズしてパース
   // 結果はcodeに保存される
+  tokens = new_vector();
+  code = new_vector();
   tokenize(argv[1]);
   program();
 
@@ -97,10 +106,9 @@ int main(int argc, char **argv) {
   printf("  mov rbp, rsp\n");
   printf("  sub rsp, 208\n");
 
-  int i = 0;
-  for (i = 0; code[i]; i++) {
+  for (int i = 0; code->data[i]; i++) {
     // 抽象構文木を下りながらコード生成
-    gen(code[i]);
+    gen((Node *)code->data[i]);
 
     // 式の評価結果値がスタックに1つ残っているはずなので
     // スタックが溢れないようにpop
