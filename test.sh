@@ -25,6 +25,7 @@ try 47 '5+6*7;'
 try 15 '5*(9-6);'
 try 4  '(3+5)/2;'
 try 4  'a=b=2;a+b;'
+try 5  'ab=2;cd=3;ab+cd;'
 
 echo OK
 

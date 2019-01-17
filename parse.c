@@ -17,6 +17,24 @@ Token get_token(int i) {
   return *((Token *)(tokens->data[i]));
 }
 
+int isalpha(char *p) {
+  return ('a' <= *p && *p <= 'z');
+}
+
+char *strtoident(char *p, char **endptr) {
+  char *c = p;
+  int len = 0;
+  while(isalpha(c++)) {
+    len++;
+  }
+  *endptr = (char *)(0 < len ? (c - 1) : p);
+
+  char *ident = malloc(sizeof(char) * (len + 1));
+  strncpy(ident, p, len);
+  ident[len] = '\0';
+  return ident;
+}
+
 // pをトークナイズしてtokensに保存する
 void tokenize(char *p) {
   int i = 0;
@@ -36,9 +54,8 @@ void tokenize(char *p) {
 
     if ('a' <= *p && *p <= 'z') {
       Token *token = add_token(TK_IDENT, p);
-      token->val = *p;
+      token->name = strtoident(p, &p);
       i++;
-      p++;
       continue;
     }
 
@@ -75,10 +92,11 @@ Node *new_node_num(int val) {
   return node;
 }
 
-Node *new_node_ident(char name) {
+Node *new_node_ident(char *name) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_IDENT;
   node->name = name;
+  map_put(variable, name, (void *)(variable->keys->len * 8));
   return node;
 }
 
@@ -107,7 +125,7 @@ Node *term() {
   }
 
   if (get_token(pos).ty == TK_IDENT) {
-    return new_node_ident(get_token(pos++).val);
+    return new_node_ident(get_token(pos++).name);
   }
 
   error("無効なトークンです: %s", get_token(pos).input);

@@ -22,6 +22,7 @@ enum {
 typedef struct {
   int ty; // トークンの型
   int val; // tyがTK_NUMの場合の数値
+  char *name; // tyがTK_IDENTの場合の識別子
   char *input; // トークン文字列(エラーメッセージ用)
 } Token;
 
@@ -37,12 +38,13 @@ typedef struct {
   struct Node *lhs; // 左辺
   struct Node *rhs; // 右辺
   int val; // tyがND_NUMの場合のみ使う
-  char name; // tyがND_IDENTの場合のみ使う
+  char *name; // tyがND_IDENTの場合のみ使う
 } Node;
 
 
 extern Vector *tokens;
 extern Vector *code;
+extern Map *variable;
 
 void tokenize(char *p);
 void program();
@@ -57,5 +59,5 @@ void *map_get(Map *map, char *key);
 
 
 void runtest();
-
+char *strtoident(char *p, char **endptr);
 

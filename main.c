@@ -20,6 +20,7 @@ Vector *tokens;
 
 // パース結果
 Vector *code;
+Map *variable;
 
 // --------------- Main
 int main(int argc, char **argv) {
@@ -37,6 +38,8 @@ int main(int argc, char **argv) {
   // 結果はcodeに保存される
   tokens = new_vector();
   code = new_vector();
+  variable = new_map();
+
   tokenize(argv[1]);
   program();
 
@@ -46,10 +49,10 @@ int main(int argc, char **argv) {
   printf("main:\n");
 
   // プロローグ
-  // 変数26個分の領域を確保する
+  // 変数分の領域を確保する
   printf("  push rbp\n");
   printf("  mov rbp, rsp\n");
-  printf("  sub rsp, 208\n");
+  printf("  sub rsp, %d\n", variable->keys->len * 8);
 
   for (int i = 0; code->data[i]; i++) {
     // 抽象構文木を下りながらコード生成
